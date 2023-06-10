@@ -23,6 +23,9 @@ data: requirements
 	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_sample_dataset.js --quiet > data/raw/all_samples.csv
 	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_curve_dataset.js --quiet > data/raw/all_curves.csv
 
+visualization: requirements
+	$(PYTHON_INTERPRETER) src/visualization/make_figures.py data/raw/all_curves.csv reports/figures/
+
 ## Delete all compiled Python files
 # clean:
 # 	find . -type f -name "*.py[co]" -delete
