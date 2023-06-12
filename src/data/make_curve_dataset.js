@@ -105,7 +105,7 @@ const result = db.paperlist_data.aggregate([{
     },
     {
         $addFields: {
-            project_names: {
+            project_name: {
                 $map: {
                     input: "$projects",
                     as: "project",
@@ -345,16 +345,35 @@ const result = db.paperlist_data.aggregate([{
                 $map: {
                     input: "$data.x",
                     as: "x",
-                    in: { $round: ["$$x", 6]}
+                    in: { $round: ["$$x", 6] }
                 }
             },
             y: {
                 $map: {
                     input: "$data.y",
                     as: "y",
-                    in: { $round: ["$$y", 6]}
+                    in: { $round: ["$$y", 6] }
                 }
             }
+        }
+    },
+    // プロジェクト毎に重複したカーブを生成してしまっているので修正
+    {
+        $group: {
+            _id: {
+                figure_id: "$figure_id",
+                sample_id: "$sample_id"
+            },
+            SID: { $first: "$SID" },
+            DOI: { $first: "$DOI" },
+            composition: { $first: "$composition" },
+            prop_x: { $first: "$prop_x" },
+            prop_y: { $first: "$prop_y" },
+            unit_x: { $first: "$unit_x" },
+            unit_y: { $first: "$unit_y" },
+            x: { $first: "$x" },
+            y: { $first: "$y" },
+            project_names: { $addToSet: "$project_name" }
         }
     },
     {
@@ -373,9 +392,9 @@ const result = db.paperlist_data.aggregate([{
             project_names: 1,
         },
     },
-    // {
-    //     $limit: 10,
-    // }
+    {
+        $limit: 10,
+    }
 ], { allowDiskUse: true })
 
 let csv = 'SID,DOI,composition,sample_id,figure_id,prop_x,prop_y,unit_x,unit_y,x,y,project_names\n'
@@ -394,8 +413,10 @@ result.forEach(function(doc, index) {
         doc.y,
         doc.project_names,
     ].map(value => {
+        print(value)
+        value = JSON.parse((JSON.stringify(value)))
         if (Array.isArray(value)) {
-            return '"' + JSON.stringify(value) + '"'
+            return '"' + value + '"'
         }
         return JSON.stringify(value)
     }).join(",");

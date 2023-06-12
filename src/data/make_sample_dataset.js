@@ -100,23 +100,22 @@ const sample_info_comments = sample_info_keys.map(key => {
     return key + '_c'
 })
 
-const result = db.paperlist_sample.aggregate([
-    {
-      $project:
+const result = db.paperlist_sample.aggregate([{
+        $project:
         /**
          * specifications: The fields to
          *   include or exclude.
          */
         {
-          sample_name: "$samplename",
-          sample_id: "$sampleid",
-          composition: 1,
-          sample_info: "$sampleinfo",
+            sample_name: "$samplename",
+            sample_id: "$sampleid",
+            composition: 1,
+            sample_info: "$sampleinfo",
         },
     },
-    // {
-    //     $limit: 100
-    // }
+    {
+        $limit: 10
+    }
 ], { allowDiskUse: true })
 
 let csv = 'sample_name,sample_id,composition,sample_info,' + sample_info_keys.join(',') + sample_info_comments.join(',') + '\n'
@@ -128,7 +127,7 @@ result.forEach(function(doc, index) {
         doc.sample_info,
     ].map(value => {
         if (typeof value === 'object') {
-            value = JSON.parse((JSON.stringify(value)))            
+            value = JSON.parse((JSON.stringify(value)))
             let result = []
             result += sample_info_keys.map(key => {
                 if (key in value) {
@@ -145,10 +144,10 @@ result.forEach(function(doc, index) {
                 }
             }).join(',')
             return result
-            // print(Object.keys(value))
-            // "[object BSON]" の場合、ダブルクォートをエスケープ
-            // return '"' + JSON.stringify(value).replace(/"/g, "'") + '"';
-            // value = value.replace(/"/g, '\\"');
+                // print(Object.keys(value))
+                // "[object BSON]" の場合、ダブルクォートをエスケープ
+                // return '"' + JSON.stringify(value).replace(/"/g, "'") + '"';
+                // value = value.replace(/"/g, '\\"');
         }
         if (Array.isArray(value)) {
             return '"' + JSON.stringify(value) + '"'

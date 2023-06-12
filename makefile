@@ -19,9 +19,13 @@ requirements:
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
 ## Make Dataset
-data: requirements
+sample_data:
 	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_sample_dataset.js --quiet > data/raw/all_samples.csv
+
+curve_data:
 	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_curve_dataset.js --quiet > data/raw/all_curves.csv
+
+all_data: requirements, sample_data, curve_data
 
 visualization: requirements
 	$(PYTHON_INTERPRETER) src/visualization/make_figures.py data/raw/all_curves.csv reports/figures/
