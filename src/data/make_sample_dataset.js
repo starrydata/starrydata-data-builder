@@ -17,13 +17,7 @@ const sample_info_keys = [
     'DifferentialThermalAnalyzer',
     'Composition conversion',
     'Measurement axis',
-    'DataType',
-    'Form',
-    'FabricationProcess',
     'MagneticMeasurement',
-    'Purity',
-    'RelativeDensity',
-    'GrainSize',
     ' Measurement temperature',
     'saturation magnetization',
     'remanence magnetion',
@@ -48,15 +42,9 @@ const sample_info_keys = [
     'measurement condition',
     'other sample process info 2',
     'Applied field',
-    'DataType',
-    'Form',
-    'ThermalMeasurement',
-    'Purity',
     'AbsoluteDensity',
-    'RelativeDensity',
     'Porosity',
     'ClosedPorosity',
-    'GrainSize',
     'PoreSize',
     'Cathode active material',
     'Cathode conductive agent',
@@ -100,59 +88,114 @@ const sample_info_comments = sample_info_keys.map(key => {
     return key + '_c'
 })
 
-const result = db.paperlist_sample.aggregate([{
-        $project:
-        /**
-         * specifications: The fields to
-         *   include or exclude.
-         */
+const result = db.paperlist_sample.aggregate([
+    {
+      $addFields:
         {
-            sample_name: "$samplename",
-            sample_id: "$sampleid",
-            composition: 1,
-            sample_info: "$sampleinfo",
+          paper_oid: {
+            $toObjectId: "$sourceid",
+          },
         },
     },
     {
-        $limit: 10
-    }
-], { allowDiskUse: true })
+      $lookup:
+        {
+          from: "paperlist_paper",
+          localField: "paper_oid",
+          foreignField: "_id",
+          as: "papers",
+        },
+    },
+    {
+      $unwind: "$papers",
+    },
+    {
+      $project:
+        {
+          sample_name: "$samplename",
+          sample_id: "$sampleid",
+          composition: 1,
+          sample_info: "$sampleinfo",
+          SID: "$papers.sid",
+          DOI: "$papers.DOI",
+        },
+    },
+    {
+      $limit: 10000,
+    },
+  ], { allowDiskUse: true })
 
-let csv = 'sample_name,sample_id,composition,sample_info,' + sample_info_keys.join(',') + sample_info_comments.join(',') + '\n'
+let csv = 'sample_name,sample_id,composition,SID, DOI' + sample_info_keys.join(',') + sample_info_comments.join(',') + '\n'
 result.forEach(function(doc, index) {
     var csvRow = [
         doc.sample_name,
         doc.sample_id,
         doc.composition,
+        doc.SID,
+        doc.DOI,
         doc.sample_info,
-    ].map(value => {
-        if (typeof value === 'object') {
-            value = JSON.parse((JSON.stringify(value)))
-            let result = []
-            result += sample_info_keys.map(key => {
-                if (key in value) {
-                    return '"' + value[key]['category'] + '"'
-                } else {
-                    return ""
+    ].map((value, index) => {
+        // sample_info
+        if (index === 5) {
+            value = JSON.stringify(value)
+            try {
+                if (value === '[unknown type]') {
+                    
                 }
-            }).join(',')
-            result += sample_info_comments.map(comment => {
-                if (comment in value) {
-                    return '"' + value[comment]['comments'] + '"'
-                } else {
+            } catch (e) {
+                print(value, e)
+            }
+            return
+            if (typeof value === 'object') {
+                value = JSON.parse((JSON.stringify(value)))
+                let result = []
+                result += sample_info_keys.map(key => {
+                    if (key in value) {
+                        // valueにcategoryがない場合がある
+                        if (!!value[key] && 'category' in value[key]) {                            
+                            return '"' + value[key]['category'] + '"'
+                        } else {
+                            return ""
+                        }
+                    } else {
+                        return ""
+                    }
+                }).join(',')
+                result += sample_info_comments.map(comment => {
+                    if (!!value[key] && comment in value) {
+                        if ('comment' in value[key]) {
+                            return '"' + value[comment]['comments'] + '"'
+                        } else {
+                            return ""
+                        }
+                        
+                    } else {
+                        return ""
+                    }
+                }).join(',')
+                return result
+            } else {
+                print('else')
+                let result = []
+                result += sample_info_keys.map(key => {
                     return ""
-                }
-            }).join(',')
-            return result
-                // print(Object.keys(value))
-                // "[object BSON]" の場合、ダブルクォートをエスケープ
-                // return '"' + JSON.stringify(value).replace(/"/g, "'") + '"';
-                // value = value.replace(/"/g, '\\"');
+                }).join(',')
+                result += sample_info_keys.map(key => {
+                    return ""
+                }).join(',')
+                return result
+            }   
         }
-        if (Array.isArray(value)) {
-            return '"' + JSON.stringify(value) + '"'
+        try {           
+            if (typeof(value) === 'string') {
+                return '"' + value.replace(/"/g, '""') + '"'
+            } else {
+                return value
+            }
+        } catch (e) {
+            print(value, typeof(value), e)
         }
-        return JSON.stringify(value)
+        return JSON.stringify(JSON.parse(JSON.stringify(value)))
     }).join(",");
     csv += csvRow + '\n';
 });

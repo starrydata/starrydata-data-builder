@@ -357,25 +357,6 @@ const result = db.paperlist_data.aggregate([{
             }
         }
     },
-    // プロジェクト毎に重複したカーブを生成してしまっているので修正
-    {
-        $group: {
-            _id: {
-                figure_id: "$figure_id",
-                sample_id: "$sample_id"
-            },
-            SID: { $first: "$SID" },
-            DOI: { $first: "$DOI" },
-            composition: { $first: "$composition" },
-            prop_x: { $first: "$prop_x" },
-            prop_y: { $first: "$prop_y" },
-            unit_x: { $first: "$unit_x" },
-            unit_y: { $first: "$unit_y" },
-            x: { $first: "$x" },
-            y: { $first: "$y" },
-            project_names: { $addToSet: "$project_name" }
-        }
-    },
     {
         $project: {
             SID: 1,

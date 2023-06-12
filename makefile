@@ -20,6 +20,7 @@ requirements:
 
 ## Make Dataset
 sample_data:
+	mkdir -p data/raw
 	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_sample_dataset.js --quiet > data/raw/all_samples.csv
 
 curve_data:
