@@ -8,6 +8,8 @@ include .env
 PROJECT_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 PROFILE = default
 PROJECT_NAME = starrydata_dataset_builder
+DATE := $(shell date +"%y%m%d")
+ZIP_NAME := starrydata_raw_$(DATE).zip
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -26,7 +28,8 @@ sample_data:
 curve_data:
 	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_curve_dataset.js --quiet > data/raw/all_curves.csv
 
-all_data: requirements, sample_data, curve_data
+all_data_zip:
+	zip -r $(ZIP_NAME) data/raw
 
 visualization: requirements
 	$(PYTHON_INTERPRETER) src/visualization/make_figures.py data/raw/all_curves.csv reports/figures/

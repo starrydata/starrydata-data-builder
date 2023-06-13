@@ -22,29 +22,30 @@ const propValues = [
     'Charge capacity'
 ]
 
-const result = db.paperlist_data.aggregate([{
-        $sort: {
-            created_at: -1,
-        },
+const result = db.paperlist_data.aggregate([
+    {
+      $sort: {
+        created_at: -1,
+      },
     },
     {
-        $group: {
-            _id: {
-                figure_id: "$figureid",
-                sample_id: "$sampleid",
-            },
-            latestRecord: {
-                $first: "$$ROOT",
-            },
+      $group: {
+        _id: {
+          figure_id: "$figureid",
+          sample_id: "$sampleid",
         },
+        latestRecord: {
+          $first: "$$ROOT",
+        },
+      },
     },
     {
-        $replaceRoot: {
-            newRoot: "$latestRecord",
-        },
+      $replaceRoot: {
+        newRoot: "$latestRecord",
+      },
     },
     {
-        $lookup:
+      $lookup:
         /**
          * from: The target collection.
          * localField: The local join field.
@@ -54,14 +55,14 @@ const result = db.paperlist_data.aggregate([{
          * let: Optional variables to use in the pipeline field stages.
          */
         {
-            from: "databases_library",
-            localField: "sourceid",
-            foreignField: "pid",
-            as: "libraries",
+          from: "databases_library",
+          localField: "sourceid",
+          foreignField: "pid",
+          as: "libraries",
         },
     },
     {
-        $unwind:
+      $unwind:
         /**
          * path: Path to the array field.
          * includeArrayIndex: Optional name for index.
@@ -69,25 +70,25 @@ const result = db.paperlist_data.aggregate([{
          *   toggle to unwind null and empty values.
          */
         {
-            path: "$libraries",
-            includeArrayIndex: "library_index",
-            preserveNullAndEmptyArrays: true,
+          path: "$libraries",
+          includeArrayIndex: "library_index",
+          preserveNullAndEmptyArrays: true,
         },
     },
     {
-        $addFields:
+      $addFields:
         /**
          * newField: The new field name.
          * expression: The new field expression.
          */
         {
-            project_oid: {
-                $toObjectId: "$libraries.projectid",
-            },
+          project_oid: {
+            $toObjectId: "$libraries.projectid",
+          },
         },
     },
     {
-        $lookup:
+      $lookup:
         /**
          * from: The target collection.
          * localField: The local join field.
@@ -97,147 +98,200 @@ const result = db.paperlist_data.aggregate([{
          * let: Optional variables to use in the pipeline field stages.
          */
         {
-            from: "databases_project",
-            localField: "project_oid",
-            foreignField: "_id",
-            as: "projects",
+          from: "databases_project",
+          localField: "project_oid",
+          foreignField: "_id",
+          as: "projects",
         },
     },
     {
-        $addFields: {
-            project_name: {
-                $map: {
-                    input: "$projects",
-                    as: "project",
-                    in: "$$project.projectname"
-                }
-            }
-        }
+      $unwind: "$projects",
     },
     {
-        $lookup:
+      $group:
         /**
-         * from: The target collection.
-         * localField: The local join field.
-         * foreignField: The target join field.
-         * as: The name for the results.
-         * pipeline: Optional pipeline to run on the foreign collection.
-         * let: Optional variables to use in the pipeline field stages.
+         * _id: The id of the group.
+         * fieldN: The first field name.
          */
         {
-            from: "paperlist_figure",
-            let: {
-                figure_oid: {
-                    $toObjectId: "$figureid",
-                },
-            },
-            pipeline: [{
-                    $match: {
-                        $expr: {
-                            $and: [{
-                                $eq: ["$_id", "$$figure_oid"],
-                            }, ],
-                        },
-                    },
-                },
-                {
-                    $lookup: {
-                        from: "paperlist_property",
-                        let: {
-                            prop_x_oid: {
-                                $toObjectId: "$property_x",
-                            },
-                        },
-                        pipeline: [{
-                            $match: {
-                                $expr: {
-                                    $and: [{
-                                        $eq: [
-                                            "$_id",
-                                            "$$prop_x_oid",
-                                        ],
-                                    }, ],
-                                },
-                            },
-                        }, ],
-                        as: "prop_x",
-                    },
-                },
-                {
-                    $lookup: {
-                        from: "paperlist_property",
-                        let: {
-                            prop_y_oid: {
-                                $toObjectId: "$property_y",
-                            },
-                        },
-                        pipeline: [{
-                            $match: {
-                                $expr: {
-                                    $and: [{
-                                        $eq: [
-                                            "$_id",
-                                            "$$prop_y_oid",
-                                        ],
-                                    }, ],
-                                },
-                            },
-                        }, ],
-                        as: "prop_y",
-                    },
-                },
-                {
-                    $lookup: {
-                        from: "paperlist_unit",
-                        let: {
-                            unit_y_oid: {
-                                $toObjectId: "$unit_y",
-                            },
-                        },
-                        pipeline: [{
-                            $match: {
-                                $expr: {
-                                    $and: [{
-                                        $eq: [
-                                            "$_id",
-                                            "$$unit_y_oid",
-                                        ],
-                                    }, ],
-                                },
-                            },
-                        }, ],
-                        as: "unit_y",
-                    },
-                },
-                {
-                    $lookup: {
-                        from: "paperlist_unit",
-                        let: {
-                            unit_x_oid: {
-                                $toObjectId: "$unit_x",
-                            },
-                        },
-                        pipeline: [{
-                            $match: {
-                                $expr: {
-                                    $and: [{
-                                        $eq: [
-                                            "$_id",
-                                            "$$unit_x_oid",
-                                        ],
-                                    }, ],
-                                },
-                            },
-                        }, ],
-                        as: "unit_x",
-                    },
-                },
+          _id: "$_id",
+          project_names: {
+            $push: "$projects.projectname",
+          },
+          original_fields: {
+            $first: "$$ROOT",
+          },
+        },
+    },
+    {
+      $project:
+        /**
+         * specifications: The fields to
+         *   include or exclude.
+         */
+        {
+          merged_fields: {
+            $mergeObjects: [
+              "$original_fields",
+              {
+                project_names: "$project_names",
+              },
             ],
-            as: "figures",
+          },
         },
     },
     {
-        $unwind:
+      $replaceRoot:
+        /**
+         * replacementDocument: A document or string.
+         */
+        {
+          newRoot: "$merged_fields",
+        },
+    },
+    {
+      $lookup:
+        /**
+         * from: The target collection.
+         * localField: The local join field.
+         * foreignField: The target join field.
+         * as: The name for the results.
+         * pipeline: Optional pipeline to run on the foreign collection.
+         * let: Optional variables to use in the pipeline field stages.
+         */
+        {
+          from: "paperlist_figure",
+          let: {
+            figure_oid: {
+              $toObjectId: "$figureid",
+            },
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    {
+                      $eq: ["$_id", "$$figure_oid"],
+                    },
+                  ],
+                },
+              },
+            },
+            {
+              $lookup: {
+                from: "paperlist_property",
+                let: {
+                  prop_x_oid: {
+                    $toObjectId: "$property_x",
+                  },
+                },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          {
+                            $eq: [
+                              "$_id",
+                              "$$prop_x_oid",
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  },
+                ],
+                as: "prop_x",
+              },
+            },
+            {
+              $lookup: {
+                from: "paperlist_property",
+                let: {
+                  prop_y_oid: {
+                    $toObjectId: "$property_y",
+                  },
+                },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          {
+                            $eq: [
+                              "$_id",
+                              "$$prop_y_oid",
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  },
+                ],
+                as: "prop_y",
+              },
+            },
+            {
+              $lookup: {
+                from: "paperlist_unit",
+                let: {
+                  unit_y_oid: {
+                    $toObjectId: "$unit_y",
+                  },
+                },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          {
+                            $eq: [
+                              "$_id",
+                              "$$unit_y_oid",
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  },
+                ],
+                as: "unit_y",
+              },
+            },
+            {
+              $lookup: {
+                from: "paperlist_unit",
+                let: {
+                  unit_x_oid: {
+                    $toObjectId: "$unit_x",
+                  },
+                },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $and: [
+                          {
+                            $eq: [
+                              "$_id",
+                              "$$unit_x_oid",
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  },
+                ],
+                as: "unit_x",
+              },
+            },
+          ],
+          as: "figures",
+        },
+    },
+    {
+      $unwind:
         /**
          * path: Path to the array field.
          * includeArrayIndex: Optional name for index.
@@ -245,36 +299,36 @@ const result = db.paperlist_data.aggregate([{
          *   toggle to unwind null and empty values.
          */
         {
-            path: "$figures",
+          path: "$figures",
         },
     },
     {
-        $unwind: {
-            path: "$figures.prop_x",
-        },
+      $unwind: {
+        path: "$figures.prop_x",
+      },
     },
     {
-        $unwind: {
-            path: "$figures.prop_y",
-        },
+      $unwind: {
+        path: "$figures.prop_y",
+      },
     },
     {
-        $unwind: {
-            path: "$figures.unit_x",
-        },
+      $unwind: {
+        path: "$figures.unit_x",
+      },
     },
     {
-        $unwind: {
-            path: "$figures.unit_y",
-        },
+      $unwind: {
+        path: "$figures.unit_y",
+      },
     },
     {
-        $addFields: {
-            prop_x: "$figures.prop_x.propertyname",
-            prop_y: "$figures.prop_y.propertyname",
-            unit_x: "$figures.unit_x.unitname",
-            unit_y: "$figures.unit_y.unitname",
-        },
+      $addFields: {
+        prop_x: "$figures.prop_x.propertyname",
+        prop_y: "$figures.prop_y.propertyname",
+        unit_x: "$figures.unit_x.unitname",
+        unit_y: "$figures.unit_y.unitname",
+      },
     },
     {
         $match: {
@@ -283,100 +337,108 @@ const result = db.paperlist_data.aggregate([{
         }
     },
     {
-        $lookup: {
-            from: "paperlist_sample",
-            let: {
-                sample_oid: {
-                    $toObjectId: "$sampleid",
-                },
+      $lookup: {
+        from: "paperlist_sample",
+        let: {
+          sample_oid: {
+            $toObjectId: "$sampleid",
+          },
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$_id", "$$sample_oid"],
+              },
             },
-            pipeline: [{
-                $match: {
-                    $expr: {
-                        $eq: ["$_id", "$$sample_oid"],
-                    },
-                },
-            }, ],
-            as: "samples",
-        },
+          },
+        ],
+        as: "samples",
+      },
     },
     {
-        $unwind: {
-            path: "$samples",
-        },
+      $unwind: {
+        path: "$samples",
+      },
     },
     {
-        $addFields: {
-            sample_id: "$samples.sampleid",
-        },
+      $addFields: {
+        sample_id: "$samples.sampleid",
+      },
     },
     {
-        $lookup: {
-            from: "paperlist_paper",
-            let: {
-                paper_oid: {
-                    $toObjectId: "$sourceid",
-                },
+      $lookup: {
+        from: "paperlist_paper",
+        let: {
+          paper_oid: {
+            $toObjectId: "$sourceid",
+          },
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $eq: ["$_id", "$$paper_oid"],
+              },
             },
-            pipeline: [{
-                $match: {
-                    $expr: {
-                        $eq: ["$_id", "$$paper_oid"],
-                    },
-                },
-            }, ],
-            as: "papers",
-        },
+          },
+        ],
+        as: "papers",
+      },
     },
     {
-        $unwind: {
-            path: "$papers",
-        },
+      $unwind: {
+        path: "$papers",
+      },
     },
     {
-        $addFields: {
-            SID: "$papers.sid",
-            DOI: "$papers.DOI",
-        },
+      $addFields: {
+        SID: "$papers.sid",
+        DOI: "$papers.DOI",
+      },
     },
     {
-        $addFields: {
-            x: {
-                $map: {
-                    input: "$data.x",
-                    as: "x",
-                    in: { $round: ["$$x", 6] }
-                }
+      $addFields: {
+        x: {
+          $map: {
+            input: "$data.x",
+            as: "x",
+            in: {
+              $round: ["$$x", 6],
             },
-            y: {
-                $map: {
-                    input: "$data.y",
-                    as: "y",
-                    in: { $round: ["$$y", 6] }
-                }
-            }
-        }
-    },
-    {
-        $project: {
-            SID: 1,
-            DOI: 1,
-            composition: 1,
-            sample_id: 1,
-            figure_id: "$figures.figureid",
-            prop_x: 1,
-            prop_y: 1,
-            unit_x: 1,
-            unit_y: 1,
-            x: 1,
-            y: 1,
-            project_names: 1,
+          },
         },
+        y: {
+          $map: {
+            input: "$data.y",
+            as: "y",
+            in: {
+              $round: ["$$y", 6],
+            },
+          },
+        },
+      },
     },
     {
-        $limit: 10,
-    }
-], { allowDiskUse: true })
+      $project: {
+        SID: 1,
+        DOI: 1,
+        composition: 1,
+        sample_id: 1,
+        figure_id: "$figures.figureid",
+        prop_x: 1,
+        prop_y: 1,
+        unit_x: 1,
+        unit_y: 1,
+        x: 1,
+        y: 1,
+        project_names: 1,
+      },
+    },
+    // {
+    //   $limit: 10,
+    // },
+  ], { allowDiskUse: true })
 
 let csv = 'SID,DOI,composition,sample_id,figure_id,prop_x,prop_y,unit_x,unit_y,x,y,project_names\n'
 result.forEach(function(doc, index) {
@@ -393,13 +455,35 @@ result.forEach(function(doc, index) {
         doc.x,
         doc.y,
         doc.project_names,
-    ].map(value => {
-        print(value)
-        value = JSON.parse((JSON.stringify(value)))
-        if (Array.isArray(value)) {
-            return '"' + value + '"'
+    ].map((value, index) => {
+        try {
+            switch (index) {
+                // number
+                case 0: // SID
+                case 3: // sample_id
+                case 4: // figure_id
+                    return value
+                // string
+                case 1: // DOI
+                case 2: // composition
+                case 5: // prop_x
+                case 6: // prop_y
+                case 7: // unit_x
+                case 8: // unit_y
+                    return '"' + value.replace(/"/g, '""') + '"'
+                // array
+                case 9: // x
+                case 10: // y
+                case 11: // project_names
+                    return '"' + JSON.stringify(value).replace(/"/g, '""') + '"'
+                default:
+                    throw Error(`undefined index: ${index}`)
+                    break;
+            }
+        } catch (error) {
+            print(value, error)
+            throw Error()
         }
-        return JSON.stringify(value)
     }).join(",");
     csv += csvRow + '\n';
 });

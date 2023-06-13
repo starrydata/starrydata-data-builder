@@ -120,12 +120,12 @@ const result = db.paperlist_sample.aggregate([
           DOI: "$papers.DOI",
         },
     },
-    {
-      $limit: 10000,
-    },
+    // {
+    //   $limit: 10000,
+    // },
   ], { allowDiskUse: true })
 
-let csv = 'sample_name,sample_id,composition,SID, DOI' + sample_info_keys.join(',') + sample_info_comments.join(',') + '\n'
+let csv = 'sample_name,sample_id,composition,SID,DOI,sample_info\n'
 result.forEach(function(doc, index) {
     var csvRow = [
         doc.sample_name,
@@ -138,53 +138,6 @@ result.forEach(function(doc, index) {
         // sample_info
         if (index === 5) {
             value = JSON.stringify(value)
-            try {
-                if (value === '[unknown type]') {
-                    
-                }
-            } catch (e) {
-                print(value, e)
-            }
-            return
-            if (typeof value === 'object') {
-                value = JSON.parse((JSON.stringify(value)))
-                let result = []
-                result += sample_info_keys.map(key => {
-                    if (key in value) {
-                        // valueにcategoryがない場合がある
-                        if (!!value[key] && 'category' in value[key]) {                            
-                            return '"' + value[key]['category'] + '"'
-                        } else {
-                            return ""
-                        }
-                    } else {
-                        return ""
-                    }
-                }).join(',')
-                result += sample_info_comments.map(comment => {
-                    if (!!value[key] && comment in value) {
-                        if ('comment' in value[key]) {
-                            return '"' + value[comment]['comments'] + '"'
-                        } else {
-                            return ""
-                        }
-                        
-                    } else {
-                        return ""
-                    }
-                }).join(',')
-                return result
-            } else {
-                print('else')
-                let result = []
-                result += sample_info_keys.map(key => {
-                    return ""
-                }).join(',')
-                result += sample_info_keys.map(key => {
-                    return ""
-                }).join(',')
-                return result
-            }   
         }
         try {           
             if (typeof(value) === 'string') {
