@@ -78,8 +78,8 @@ def main(input_filepath, output_filepath):
         # レイアウトを作成
         # layout = column(caption, p)
 
-        output_file(filename=output_filepath + file_name + '.html')
-        export_png(p, filename=output_filepath + file_name + '.png')
+        output_file(filename=output_filepath + 'curves/' + file_name + '.html')
+        # export_png(p, filename=output_filepath + file_name + '.png')
         # show(p)
 
         save(p)
