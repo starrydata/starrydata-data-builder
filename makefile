@@ -32,7 +32,8 @@ all_data_zip:
 	zip -r $(ZIP_NAME) data/raw
 
 visualization: requirements
-	$(PYTHON_INTERPRETER) src/visualization/make_figures.py data/raw/all_curves.csv reports/figures/
+	rm -rf reports/figures/curves/*
+	$(PYTHON_INTERPRETER) src/visualization/make_figures.py data/raw/all_curves.csv reports/figures/curves/
 
 ## Delete all compiled Python files
 # clean:

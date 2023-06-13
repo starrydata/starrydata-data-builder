@@ -10,6 +10,8 @@ from bokeh.plotting import figure, output_file, save, show
 from bokeh.layouts import column
 from bokeh.models import ColumnDataSource, HoverTool, Label, Div
 from bokeh.io import export_png
+from bs4 import BeautifulSoup
+
 
 @click.command()
 @click.argument('input_filepath', type=click.Path(exists=True))
@@ -40,6 +42,9 @@ def main(input_filepath, output_filepath):
     df["SID"] = df["SID"].apply(str)
     df["sample_id"] = df["sample_id"].apply(str)
     df_fp = df.groupby(['prop_x', 'prop_y']).agg({'unit_x': 'first', 'unit_y': 'first'}).reset_index()
+
+    soup = BeautifulSoup("<html><head><title>Curve example</title></head><body><h1>Curve examples</h1></body></html>", "html.parser")
+    ul_tag = soup.new_tag("ul")
 
     for index, row in df_fp.iterrows():
         print(f'generate figures: {index}/{df_fp.shape[0]}')
@@ -78,11 +83,26 @@ def main(input_filepath, output_filepath):
         # レイアウトを作成
         # layout = column(caption, p)
 
-        output_file(filename=output_filepath + 'curves/' + file_name + '.html')
+        output_file(filename=output_filepath + file_name + '.html')
         # export_png(p, filename=output_filepath + file_name + '.png')
         # show(p)
 
         save(p)
+        li_tag = soup.new_tag("li")
+        a_tag = soup.new_tag("a")
+
+        a_tag.string = f'{prop_x}-{prop_y}'    
+        a_tag['href'] = f'./{prop_x}-{prop_y}.html'
+        li_tag.append(a_tag)
+        ul_tag.append(li_tag)
+
+    body_tag = soup.body
+    body_tag.append(ul_tag)
+
+    html_string = soup.prettify()
+    # HTML文字列をファイルに書き込み
+    with open(output_filepath + 'index.html', 'w') as file:
+        file.write(html_string)
 
 
 
