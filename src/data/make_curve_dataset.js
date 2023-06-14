@@ -1,28 +1,29 @@
 const propValues = [
-    'Temperature',
-    'Seebeck coefficient',
-    'Electrical resistivity',
-    'Electrical conductivity',
-    'Thermal conductivity',
-    'Power factor',
-    'ZT',
-    'Carrier mobility',
-    'Hall coefficient',
-    'Magnetic field',
-    'Magnetic Field',
-    'Magnetic field strength (H)',
-    'Magnetization',
-    'magnetization_per_weight',
-    'magnetization_per_volume',
-    'magnetization_Bohr',
-    'C rate',
-    'Cycle number',
-    'Voltage',
-    'Discharge capacity',
-    'Charge capacity'
+  'Temperature',
+  'Seebeck coefficient',
+  'Electrical resistivity',
+  'Electrical conductivity',
+  'Thermal conductivity',
+  'Power factor',
+  'ZT',
+  'Carrier mobility',
+  'Hall coefficient',
+  'Magnetic field',
+  'Magnetic Field',
+  'Magnetic field strength (H)',
+  'Magnetization',
+  'magnetization_per_weight',
+  'magnetization_per_volume',
+  'magnetization_Bohr',
+  'C rate',
+  'Cycle number',
+  'Voltage',
+  'Discharge capacity',
+  'Charge capacity',
 ]
 
-const result = db.paperlist_data.aggregate([
+const result = db.paperlist_data.aggregate(
+  [
     {
       $sort: {
         created_at: -1,
@@ -31,17 +32,17 @@ const result = db.paperlist_data.aggregate([
     {
       $group: {
         _id: {
-          figure_id: "$figureid",
-          sample_id: "$sampleid",
+          figure_id: '$figureid',
+          sample_id: '$sampleid',
         },
         latestRecord: {
-          $first: "$$ROOT",
+          $first: '$$ROOT',
         },
       },
     },
     {
       $replaceRoot: {
-        newRoot: "$latestRecord",
+        newRoot: '$latestRecord',
       },
     },
     {
@@ -55,10 +56,10 @@ const result = db.paperlist_data.aggregate([
          * let: Optional variables to use in the pipeline field stages.
          */
         {
-          from: "databases_library",
-          localField: "sourceid",
-          foreignField: "pid",
-          as: "libraries",
+          from: 'databases_library',
+          localField: 'sourceid',
+          foreignField: 'pid',
+          as: 'libraries',
         },
     },
     {
@@ -70,8 +71,8 @@ const result = db.paperlist_data.aggregate([
          *   toggle to unwind null and empty values.
          */
         {
-          path: "$libraries",
-          includeArrayIndex: "library_index",
+          path: '$libraries',
+          includeArrayIndex: 'library_index',
           preserveNullAndEmptyArrays: true,
         },
     },
@@ -83,7 +84,7 @@ const result = db.paperlist_data.aggregate([
          */
         {
           project_oid: {
-            $toObjectId: "$libraries.projectid",
+            $toObjectId: '$libraries.projectid',
           },
         },
     },
@@ -98,14 +99,14 @@ const result = db.paperlist_data.aggregate([
          * let: Optional variables to use in the pipeline field stages.
          */
         {
-          from: "databases_project",
-          localField: "project_oid",
-          foreignField: "_id",
-          as: "projects",
+          from: 'databases_project',
+          localField: 'project_oid',
+          foreignField: '_id',
+          as: 'projects',
         },
     },
     {
-      $unwind: "$projects",
+      $unwind: '$projects',
     },
     {
       $group:
@@ -114,12 +115,12 @@ const result = db.paperlist_data.aggregate([
          * fieldN: The first field name.
          */
         {
-          _id: "$_id",
+          _id: '$_id',
           project_names: {
-            $push: "$projects.projectname",
+            $push: '$projects.projectname',
           },
           original_fields: {
-            $first: "$$ROOT",
+            $first: '$$ROOT',
           },
         },
     },
@@ -132,9 +133,9 @@ const result = db.paperlist_data.aggregate([
         {
           merged_fields: {
             $mergeObjects: [
-              "$original_fields",
+              '$original_fields',
               {
-                project_names: "$project_names",
+                project_names: '$project_names',
               },
             ],
           },
@@ -146,7 +147,7 @@ const result = db.paperlist_data.aggregate([
          * replacementDocument: A document or string.
          */
         {
-          newRoot: "$merged_fields",
+          newRoot: '$merged_fields',
         },
     },
     {
@@ -160,10 +161,10 @@ const result = db.paperlist_data.aggregate([
          * let: Optional variables to use in the pipeline field stages.
          */
         {
-          from: "paperlist_figure",
+          from: 'paperlist_figure',
           let: {
             figure_oid: {
-              $toObjectId: "$figureid",
+              $toObjectId: '$figureid',
             },
           },
           pipeline: [
@@ -172,7 +173,7 @@ const result = db.paperlist_data.aggregate([
                 $expr: {
                   $and: [
                     {
-                      $eq: ["$_id", "$$figure_oid"],
+                      $eq: ['$_id', '$$figure_oid'],
                     },
                   ],
                 },
@@ -180,10 +181,10 @@ const result = db.paperlist_data.aggregate([
             },
             {
               $lookup: {
-                from: "paperlist_property",
+                from: 'paperlist_property',
                 let: {
                   prop_x_oid: {
-                    $toObjectId: "$property_x",
+                    $toObjectId: '$property_x',
                   },
                 },
                 pipeline: [
@@ -192,25 +193,22 @@ const result = db.paperlist_data.aggregate([
                       $expr: {
                         $and: [
                           {
-                            $eq: [
-                              "$_id",
-                              "$$prop_x_oid",
-                            ],
+                            $eq: ['$_id', '$$prop_x_oid'],
                           },
                         ],
                       },
                     },
                   },
                 ],
-                as: "prop_x",
+                as: 'prop_x',
               },
             },
             {
               $lookup: {
-                from: "paperlist_property",
+                from: 'paperlist_property',
                 let: {
                   prop_y_oid: {
-                    $toObjectId: "$property_y",
+                    $toObjectId: '$property_y',
                   },
                 },
                 pipeline: [
@@ -219,25 +217,22 @@ const result = db.paperlist_data.aggregate([
                       $expr: {
                         $and: [
                           {
-                            $eq: [
-                              "$_id",
-                              "$$prop_y_oid",
-                            ],
+                            $eq: ['$_id', '$$prop_y_oid'],
                           },
                         ],
                       },
                     },
                   },
                 ],
-                as: "prop_y",
+                as: 'prop_y',
               },
             },
             {
               $lookup: {
-                from: "paperlist_unit",
+                from: 'paperlist_unit',
                 let: {
                   unit_y_oid: {
-                    $toObjectId: "$unit_y",
+                    $toObjectId: '$unit_y',
                   },
                 },
                 pipeline: [
@@ -246,25 +241,22 @@ const result = db.paperlist_data.aggregate([
                       $expr: {
                         $and: [
                           {
-                            $eq: [
-                              "$_id",
-                              "$$unit_y_oid",
-                            ],
+                            $eq: ['$_id', '$$unit_y_oid'],
                           },
                         ],
                       },
                     },
                   },
                 ],
-                as: "unit_y",
+                as: 'unit_y',
               },
             },
             {
               $lookup: {
-                from: "paperlist_unit",
+                from: 'paperlist_unit',
                 let: {
                   unit_x_oid: {
-                    $toObjectId: "$unit_x",
+                    $toObjectId: '$unit_x',
                   },
                 },
                 pipeline: [
@@ -273,21 +265,18 @@ const result = db.paperlist_data.aggregate([
                       $expr: {
                         $and: [
                           {
-                            $eq: [
-                              "$_id",
-                              "$$unit_x_oid",
-                            ],
+                            $eq: ['$_id', '$$unit_x_oid'],
                           },
                         ],
                       },
                     },
                   },
                 ],
-                as: "unit_x",
+                as: 'unit_x',
               },
             },
           ],
-          as: "figures",
+          as: 'figures',
         },
     },
     {
@@ -299,121 +288,121 @@ const result = db.paperlist_data.aggregate([
          *   toggle to unwind null and empty values.
          */
         {
-          path: "$figures",
+          path: '$figures',
         },
     },
     {
       $unwind: {
-        path: "$figures.prop_x",
+        path: '$figures.prop_x',
       },
     },
     {
       $unwind: {
-        path: "$figures.prop_y",
+        path: '$figures.prop_y',
       },
     },
     {
       $unwind: {
-        path: "$figures.unit_x",
+        path: '$figures.unit_x',
       },
     },
     {
       $unwind: {
-        path: "$figures.unit_y",
+        path: '$figures.unit_y',
       },
     },
     {
       $addFields: {
-        prop_x: "$figures.prop_x.propertyname",
-        prop_y: "$figures.prop_y.propertyname",
-        unit_x: "$figures.unit_x.unitname",
-        unit_y: "$figures.unit_y.unitname",
+        prop_x: '$figures.prop_x.propertyname',
+        prop_y: '$figures.prop_y.propertyname',
+        unit_x: '$figures.unit_x.unitname',
+        unit_y: '$figures.unit_y.unitname',
       },
     },
     {
-        $match: {
-            prop_x: { $in: propValues },
-            prop_y: { $in: propValues },
-        }
+      $match: {
+        prop_x: { $in: propValues },
+        prop_y: { $in: propValues },
+      },
     },
     {
       $lookup: {
-        from: "paperlist_sample",
+        from: 'paperlist_sample',
         let: {
           sample_oid: {
-            $toObjectId: "$sampleid",
+            $toObjectId: '$sampleid',
           },
         },
         pipeline: [
           {
             $match: {
               $expr: {
-                $eq: ["$_id", "$$sample_oid"],
+                $eq: ['$_id', '$$sample_oid'],
               },
             },
           },
         ],
-        as: "samples",
+        as: 'samples',
       },
     },
     {
       $unwind: {
-        path: "$samples",
+        path: '$samples',
       },
     },
     {
       $addFields: {
-        sample_id: "$samples.sampleid",
+        sample_id: '$samples.sampleid',
       },
     },
     {
       $lookup: {
-        from: "paperlist_paper",
+        from: 'paperlist_paper',
         let: {
           paper_oid: {
-            $toObjectId: "$sourceid",
+            $toObjectId: '$sourceid',
           },
         },
         pipeline: [
           {
             $match: {
               $expr: {
-                $eq: ["$_id", "$$paper_oid"],
+                $eq: ['$_id', '$$paper_oid'],
               },
             },
           },
         ],
-        as: "papers",
+        as: 'papers',
       },
     },
     {
       $unwind: {
-        path: "$papers",
+        path: '$papers',
       },
     },
     {
       $addFields: {
-        SID: "$papers.sid",
-        DOI: "$papers.DOI",
+        SID: '$papers.sid',
+        DOI: '$papers.DOI',
       },
     },
     {
       $addFields: {
         x: {
           $map: {
-            input: "$data.x",
-            as: "x",
+            input: '$data.x',
+            as: 'x',
             in: {
-              $round: ["$$x", 6],
+              $round: ['$$x', 6],
             },
           },
         },
         y: {
           $map: {
-            input: "$data.y",
-            as: "y",
+            input: '$data.y',
+            as: 'y',
             in: {
-              $round: ["$$y", 6],
+              $round: ['$$y', 6],
             },
           },
         },
@@ -425,7 +414,7 @@ const result = db.paperlist_data.aggregate([
         DOI: 1,
         composition: 1,
         sample_id: 1,
-        figure_id: "$figures.figureid",
+        figure_id: '$figures.figureid',
         prop_x: 1,
         prop_y: 1,
         unit_x: 1,
@@ -438,54 +427,59 @@ const result = db.paperlist_data.aggregate([
     // {
     //   $limit: 10,
     // },
-  ], { allowDiskUse: true })
+  ],
+  { allowDiskUse: true }
+)
 
-let csv = 'SID,DOI,composition,sample_id,figure_id,prop_x,prop_y,unit_x,unit_y,x,y,project_names\n'
-result.forEach(function(doc, index) {
-    var csvRow = [
-        doc.SID,
-        doc.DOI,
-        doc.composition,
-        doc.sample_id,
-        doc.figure_id,
-        doc.prop_x,
-        doc.prop_y,
-        doc.unit_x,
-        doc.unit_y,
-        doc.x,
-        doc.y,
-        doc.project_names,
-    ].map((value, index) => {
-        try {
-            switch (index) {
-                // number
-                case 0: // SID
-                case 3: // sample_id
-                case 4: // figure_id
-                    return value
-                // string
-                case 1: // DOI
-                case 2: // composition
-                case 5: // prop_x
-                case 6: // prop_y
-                case 7: // unit_x
-                case 8: // unit_y
-                    return '"' + value.replace(/"/g, '""') + '"'
-                // array
-                case 9: // x
-                case 10: // y
-                case 11: // project_names
-                    return '"' + JSON.stringify(value).replace(/"/g, '""') + '"'
-                default:
-                    throw Error(`undefined index: ${index}`)
-                    break;
-            }
-        } catch (error) {
-            print(value, error)
-            throw Error()
+let csv =
+  'SID,DOI,composition,sample_id,figure_id,prop_x,prop_y,unit_x,unit_y,x,y,project_names\n'
+result.forEach(function (doc, index) {
+  var csvRow = [
+    doc.SID,
+    doc.DOI,
+    doc.composition,
+    doc.sample_id,
+    doc.figure_id,
+    doc.prop_x,
+    doc.prop_y,
+    doc.unit_x,
+    doc.unit_y,
+    doc.x,
+    doc.y,
+    doc.project_names,
+  ]
+    .map((value, index) => {
+      try {
+        switch (index) {
+          // number
+          case 0: // SID
+          case 3: // sample_id
+          case 4: // figure_id
+            return value
+          // string
+          case 1: // DOI
+          case 2: // composition
+          case 5: // prop_x
+          case 6: // prop_y
+          case 7: // unit_x
+          case 8: // unit_y
+            return '"' + value.replace(/"/g, '""') + '"'
+          // array
+          case 9: // x
+          case 10: // y
+          case 11: // project_names
+            return '"' + JSON.stringify(value).replace(/"/g, '""') + '"'
+          default:
+            throw Error(`undefined index: ${index}`)
+            break
         }
-    }).join(",");
-    csv += csvRow + '\n';
-});
+      } catch (error) {
+        print(value, error)
+        throw Error()
+      }
+    })
+    .join(',')
+  csv += csvRow + '\n'
+})
 
-print(csv);
+print(csv)
