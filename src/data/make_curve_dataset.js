@@ -26,7 +26,7 @@ const result = db.paperlist_data.aggregate(
   [
     {
       $sort: {
-        created_at: -1,
+        updated_at: -1,
       },
     },
     {
