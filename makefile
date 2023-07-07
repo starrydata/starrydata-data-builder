@@ -10,6 +10,8 @@ PROFILE = default
 PROJECT_NAME = starrydata_dataset_builder
 DATE := $(shell date +"%y%m%d")
 ZIP_NAME := starrydata_raw_$(DATE).zip
+SAMPLE_DATASET_FILE_PATH = data/raw/all_samples.csv
+CURVE_DATASET_FILE_PATH = data/raw/all_curves.csv
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -23,10 +25,10 @@ requirements:
 ## Make Dataset
 sample_data:
 	mkdir -p data/raw
-	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_sample_dataset.js --quiet > data/raw/all_samples.csv
+	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_sample_dataset.js --quiet > $(SAMPLE_DATASET_FILE_PATH)
 
 curve_data:
-	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_curve_dataset.js --quiet > data/raw/all_curves.csv
+	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_curve_dataset.js --quiet > $(CURVE_DATASET_FILE_PATH)
 
 all_data_zip:
 	zip -r $(ZIP_NAME) data/raw
