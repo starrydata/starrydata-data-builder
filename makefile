@@ -10,8 +10,8 @@ PROFILE = default
 PROJECT_NAME = starrydata_dataset_builder
 DATE := $(shell date +"%y%m%d")
 ZIP_NAME := starrydata_raw_$(DATE).zip
-SAMPLE_DATASET_FILE_PATH = data/raw/all_samples.csv
-CURVE_DATASET_FILE_PATH = data/raw/all_curves.csv
+DATASET_FILE_PATH := data/raw
+REPORTS_FILE_PATH := reports/
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -22,20 +22,26 @@ requirements:
 	$(PYTHON_INTERPRETER) -m pip install pip setuptools wheel
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
-## Make Dataset
-sample_data:
-	mkdir -p data/raw
-	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_sample_dataset.js --quiet > $(SAMPLE_DATASET_FILE_PATH)
+## Make sample dataset
+sample_dataset:
+	@echo "Creating sample data..."
+	@path=$(DATASET_FILE_PATH)/sample_dataset.csv; \
+	mkdir -p $(DATASET_FILE_PATH); \
+	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_sample_dataset.js --quiet > $$path
 
-curve_data:
-	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_curve_dataset.js --quiet > $(CURVE_DATASET_FILE_PATH)
+## Make curve dataset
+curve_dataset:
+	@echo "Creating curve data..."
+	@path=$(DATASET_FILE_PATH)/all_curves.csv; \
+	mkdir -p $(DATASET_FILE_PATH); \
+	$(MONGO_CLI) $(MONGO_HOST):$(MONGO_PORT)/$(MONGO_DB) src/data/make_curve_dataset.js --quiet > $$path
 
 all_data_zip:
-	zip -r $(ZIP_NAME) data/raw
+	zip -r $(ZIP_NAME) $(DATASET_FILE_PATH)
 
 visualization: requirements
-	rm -rf docs/figures/curves/*
-	$(PYTHON_INTERPRETER) src/visualization/make_figures.py data/raw/all_curves.csv docs/figures/curves/
+	mkdir -p $(CURVE_FIGURES_FILE_PATH)
+	$(PYTHON_INTERPRETER) src/visualization/make_figures.py $(DATASET_FILE_PATH)/all_curves.csv $(CURVE_FIGURES_FILE_PATH)
 
 ## Delete all compiled Python files
 # clean:
