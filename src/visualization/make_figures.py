@@ -2,15 +2,15 @@
 import click
 import logging
 from pathlib import Path
-# from dotenv import find_dotenv, load_dotenv
 import pandas as pd
 from tqdm import tqdm
 import numpy as np
-from bokeh.plotting import figure, output_file, save, show
+from bokeh.plotting import figure, output_file, save
 from bokeh.layouts import column
 from bokeh.models import ColumnDataSource, HoverTool, Label, Div
 from bokeh.io import export_png
 from bs4 import BeautifulSoup
+import datetime
 
 
 @click.command()
@@ -73,25 +73,23 @@ def main(input_filepath, output_filepath):
         p.scatter('x', 'y', source=source, alpha=0.2)
 
         file_name = f'{prop_x}-{prop_y}'
-        # ツールチップの設定
         hover = HoverTool(tooltips=[('SID', '@SID'), ('Figure ID', '@figure_id'), ('Sample ID', '@sample_id'), ('composition', '@composition')])
         p.add_tools(hover)
 
-        # 説明文を作成
-        # caption = Div(text="<h3>この線グラフはサンプルデータを示しています</h3>")
+        file_path = output_filepath + file_name + '.html'  # ファイルパスを変数に格納
 
-        # レイアウトを作成
-        # layout = column(caption, p)
-
-        output_file(filename=output_filepath + file_name + '.html')
-        # export_png(p, filename=output_filepath + file_name + '.png')
-        # show(p)
-
+        output_file(filename=file_path)
         save(p)
+
+        # HTMLファイルを開いて作成日時を追加
+        with open(file_path, 'a') as f:
+            created_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            f.write(f"<footer>作成日時: {created_date}</footer>")
+
         li_tag = soup.new_tag("li")
         a_tag = soup.new_tag("a")
 
-        a_tag.string = f'{prop_x}-{prop_y}'    
+        a_tag.string = f'{prop_x}-{prop_y}'
         a_tag['href'] = f'./{prop_x}-{prop_y}.html'
         li_tag.append(a_tag)
         ul_tag.append(li_tag)
@@ -99,22 +97,22 @@ def main(input_filepath, output_filepath):
     body_tag = soup.body
     body_tag.append(ul_tag)
 
-    html_string = soup.prettify()
+    # 作成日時を追加: footer要素を作成して、作成日時の日付を埋め込む
+    created_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    footer_tag = soup.new_tag("footer")
+    footer_tag.string = f"作成日時: {created_date}"
+    soup.body.append(footer_tag)
+
     # HTML文字列をファイルに書き込み
+    html_string = soup.prettify(formatter=None)
     with open(output_filepath + 'index.html', 'w') as file:
         file.write(html_string)
-
 
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_fmt)
 
-    # not used in this stub but often useful for finding various files
     project_dir = Path(__file__).resolve().parents[2]
-
-    # find .env automagically by walking up directories until it's found, then
-    # load up the .env entries as environment variables
-    # load_dotenv(find_dotenv())
 
     main()
