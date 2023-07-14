@@ -84,7 +84,7 @@ def main(input_filepath, output_filepath):
         # HTMLファイルを開いて作成日時を追加
         with open(file_path, 'a') as f:
             created_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            f.write(f"<footer>作成日時: {created_date}</footer>")
+            f.write(f"<footer>Date created: {created_date}</footer>")
 
         li_tag = soup.new_tag("li")
         a_tag = soup.new_tag("a")
@@ -100,7 +100,7 @@ def main(input_filepath, output_filepath):
     # 作成日時を追加: footer要素を作成して、作成日時の日付を埋め込む
     created_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     footer_tag = soup.new_tag("footer")
-    footer_tag.string = f"作成日時: {created_date}"
+    footer_tag.string = f"Date created: {created_date}"
     soup.body.append(footer_tag)
 
     # HTML文字列をファイルに書き込み
